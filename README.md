@@ -82,6 +82,20 @@ To automate the management of other Home Assistant add-ons based on the status o
 
 *Note: The feedback of the addon status is very sluggish at the time I created this automation. This means that if you stop the USB/IP Client Home Assistant add-on, for example, it takes 1-5 minutes for the status of the sensor to be updated!*
 
+**Access Add-on Entities:**
+
+1. Navigate to Settings > Devices & Services.
+2. Locate and select Home Assistant Supervisor from the device list.
+3. Click on Entities to view all entities associated with the Supervisor.
+
+**Enable the Running State Sensor:**
+
+1. In the entities list, find the binary sensor corresponding to the add-on you wish to monitor. These sensors are typically named in the format binary_sensor.[addon_name]_running.
+2. Click on the desired sensor to open its details.
+3. Click on the Settings (cog) icon in the top-right corner.
+4. Toggle the Enabled switch to activate the sensor.
+5. Click Update to save your changes.
+
 ```yaml
 alias: USB/IP Client Home Assistant Add-on Management
 description: >-

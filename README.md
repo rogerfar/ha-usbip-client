@@ -39,7 +39,8 @@ The add-on requires the following configuration options:
 - **discovery_server_address**: The IP address of the USB/IP server used for device discovery.
 - **devices**: A list of devices with the following options:
   - **server_address**: The IP address of the USB/IP server.
-  - **bus_id**: The bus ID of the USB device on the USB/IP server. Example: `1-1.1.3` or `1-1.2`.
+  - **bus_id**: (Optional) The bus ID of the USB device on the USB/IP server. Example: `1-1.1.3` or `1-1.2`. Cannot be used with hardware_id.
+  - **hardware_id**: (Optional) The hardware ID of the USB device on the USB/IP server. Example: `1234:5678`. Cannot be used with bus_id.
 
 Example configuration:
 
@@ -51,9 +52,21 @@ devices:
     bus_id: "1-1.1.3"
   - server_address: "192.168.1.44"
     bus_id: "1-1.2"
+  - server_address: "192.168.1.44"
+    hardware_id: "1234:5678"
 ```
 
-Replace `192.168.1.44` with your USB/IP server IP address and provide the correct bus IDs of the USB devices.
+Replace `192.168.1.44` with your USB/IP server IP address and provide either the correct bus IDs or hardware IDs of the USB devices. You can use either `bus_id` or `hardware_id` for each device, but not both.
+
+### Finding Device Identifiers
+
+**Bus ID**: Use the discovery functionality by checking the logs after starting the add-on. The add-on will list all available devices with their bus IDs.
+
+**Hardware ID**: You can find hardware IDs by running `lsusb` on the USB/IP server, which will show output like:
+```
+Bus 001 Device 003: ID 1234:5678 Device Name
+```
+The hardware ID in this case would be `1234:5678`.
 
 ## Usage
 

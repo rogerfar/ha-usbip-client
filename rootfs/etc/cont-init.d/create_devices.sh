@@ -5,6 +5,7 @@ bashio::log.level "$(bashio::config 'log_level')"
 
 declare server_address
 declare bus_id
+declare hardware_id
 declare script_directory="/usr/local/bin"
 declare mount_script="/usr/local/bin/mount_devices"
 declare discovery_server_address
@@ -61,16 +62,38 @@ bashio::log.info "Iterating over configured devices."
 for device in $(bashio::config 'devices|keys'); do
     server_address=$(bashio::config "devices[${device}].server_address")
     bus_id=$(bashio::config "devices[${device}].bus_id")
+    hardware_id=$(bashio::config "devices[${device}].hardware_id")
 
-    bashio::log.info "Adding device from server ${server_address} on bus ${bus_id}"
+    # Determine connection type and validate
+    if [[ -n "$bus_id" && -n "$hardware_id" ]]; then
+        bashio::log.error "Device ${device}: Cannot specify both bus_id and hardware_id. Please use only one."
+        continue
+    elif [[ -z "$bus_id" && -z "$hardware_id" ]]; then
+        bashio::log.error "Device ${device}: Must specify either bus_id or hardware_id."
+        continue
+    fi
 
-    # Detach any existing attachments
-    bashio::log.debug "Detaching device ${bus_id} from server ${server_address} if already attached."
-    echo "/usr/sbin/usbip detach -r ${server_address} -b ${bus_id} >/dev/null 2>&1 || true" >>"${mount_script}"
+    if [[ -n "$bus_id" ]]; then
+        bashio::log.info "Adding device from server ${server_address} on bus ${bus_id}"
+        
+        # Detach any existing attachments by bus_id
+        bashio::log.debug "Detaching device ${bus_id} from server ${server_address} if already attached."
+        echo "/usr/sbin/usbip detach -r ${server_address} -b ${bus_id} >/dev/null 2>&1 || true" >>"${mount_script}"
 
-    # Attach the device
-    bashio::log.debug "Attaching device ${bus_id} from server ${server_address}."
-    echo "/usr/sbin/usbip attach --remote=${server_address} --busid=${bus_id}" >>"${mount_script}"
+        # Attach the device by bus_id
+        bashio::log.debug "Attaching device ${bus_id} from server ${server_address}."
+        echo "/usr/sbin/usbip attach --remote=${server_address} --busid=${bus_id}" >>"${mount_script}"
+    elif [[ -n "$hardware_id" ]]; then
+        bashio::log.info "Adding device from server ${server_address} with hardware ID ${hardware_id}"
+        
+        # Note: detach by hardware_id is not directly supported, but we can detach all from server
+        bashio::log.debug "Detaching any existing devices from server ${server_address}."
+        echo "/usr/sbin/usbip detach -r ${server_address} >/dev/null 2>&1 || true" >>"${mount_script}"
+
+        # Attach the device by hardware_id
+        bashio::log.debug "Attaching device ${hardware_id} from server ${server_address}."
+        echo "/usr/sbin/usbip attach --remote=${server_address} --hardware-id=${hardware_id}" >>"${mount_script}"
+    fi
 done
 
 bashio::log.info "Device configuration complete. Ready to attach devices."

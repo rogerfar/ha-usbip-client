@@ -35,4 +35,5 @@ schema:
   discovery_server_address: str
   devices:
     - server_address: str
-      bus_id: str
+      bus_id: str?
+      hardware_id: str?

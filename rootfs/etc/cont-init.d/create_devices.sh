@@ -97,8 +97,24 @@ for device in $(bashio::config 'devices|keys'); do
         echo "/usr/sbin/usbip detach -r ${server_address} >/dev/null 2>&1 || true" >>"${mount_script}"
 
         # Attach the device by hardware_id
-        bashio::log.debug "Attaching device ${hardware_id} from server ${server_address}."
-        echo "/usr/sbin/usbip attach --remote=${server_address} --hardware-id=${hardware_id}" >>"${mount_script}"
+        bashio::log.debug "Looking up bus_id for hardware_id ${hardware_id} on ${server_address}"
+        bus_id_from_hwid=$(usbip list -r "${server_address}" | awk -v hwid="${hardware_id}" '
+            BEGIN {bus=""}
+            /busid/ {bus=$2}
+            /Vendor.*Product/ {
+                if (index($0, hwid) > 0) {
+                    print bus
+                    exit
+                }
+            }')
+        
+        if [[ -n "$bus_id_from_hwid" ]]; then
+            bashio::log.info "Resolved hardware ID ${hardware_id} to bus ${bus_id_from_hwid}"
+            echo "/usr/sbin/usbip detach -r ${server_address} -b ${bus_id_from_hwid} >/dev/null 2>&1 || true" >>"${mount_script}"
+            echo "/usr/sbin/usbip attach --remote=${server_address} --busid=${bus_id_from_hwid}" >>"${mount_script}"
+        else
+            bashio::log.error "Could not find matching device for hardware ID ${hardware_id} on ${server_address}"
+        fi
     fi
 done
 

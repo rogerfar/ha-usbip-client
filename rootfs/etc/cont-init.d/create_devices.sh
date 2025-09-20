@@ -107,15 +107,16 @@ for device in $(bashio::config 'devices|keys'); do
 
         # Attach the device by hardware_id
         bashio::log.debug "Looking up bus_id for hardware_id ${hardware_id} on ${server_address}"
-        bus_id_from_hwid=$(usbip list -r "${server_address}" | awk -v hwid="${hardware_id}" '
-            BEGIN {bus=""}
-            /busid/ {bus=$2}
-            /Vendor.*Product/ {
-                if (index($0, hwid) > 0) {
-                    print bus
-                    exit
-                }
-            }')
+        bus_id_from_hwid=""
+        while IFS= read -r line; do
+            if [[ $line =~ ^[[:space:]]*([0-9A-Za-z.-]+): ]]; then
+                current_bus="${BASH_REMATCH[1]}"
+            fi
+            if [[ $line =~ \(${vendor_id}:${product_id}\) ]]; then
+                bus_id_from_hwid="$current_bus"
+                break
+            fi
+        done < <(/usr/sbin/usbip list -r "${server_address}" 2>/dev/null)
         
         if [[ -n "$bus_id_from_hwid" ]]; then
             bashio::log.info "Resolved hardware ID ${hardware_id} to bus ${bus_id_from_hwid}"

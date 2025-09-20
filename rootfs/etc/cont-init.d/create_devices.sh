@@ -10,6 +10,10 @@ declare script_directory="/usr/local/bin"
 declare mount_script="/usr/local/bin/mount_devices"
 declare discovery_server_address
 
+normalize() {
+    [[ "$1" == "null" ]] && echo "" || echo "$1"
+}
+
 discovery_server_address=$(bashio::config 'discovery_server_address')
 
 bashio::log.info ""
@@ -61,8 +65,10 @@ fi
 bashio::log.info "Iterating over configured devices."
 for device in $(bashio::config 'devices|keys'); do
     server_address=$(bashio::config "devices[${device}].server_address")
-    bus_id=$(bashio::config "devices[${device}].bus_id")
-    hardware_id=$(bashio::config "devices[${device}].hardware_id")
+    bus_id=$(normalize "$(bashio::config "devices[${device}].bus_id")")
+    hardware_id=$(normalize "$(bashio::config "devices[${device}].hardware_id")")
+
+    bashio::log.debug "Device ${device}: server_address='${server_address}', bus_id='${bus_id}', hardware_id='${hardware_id}'"
 
     # Determine connection type and validate
     if [[ -n "$bus_id" && -n "$hardware_id" ]]; then

@@ -107,16 +107,32 @@ for device in $(bashio::config 'devices|keys'); do
 
         # Attach the device by hardware_id
         bashio::log.debug "Looking up bus_id for hardware_id ${hardware_id} on ${server_address}"
+        
+        vendor_id=""
+        product_id=""
+        if [[ -n "${hardware_id:-}" ]]; then
+            vendor_id="${hardware_id%%:*}"
+            product_id="${hardware_id##*:}"
+        fi
+        
         bus_id_from_hwid=""
         while IFS= read -r line; do
             if [[ $line =~ ^[[:space:]]*([0-9A-Za-z.-]+): ]]; then
                 current_bus="${BASH_REMATCH[1]}"
             fi
-            if [[ $line =~ \(${vendor_id}:${product_id}\) ]]; then
+            if [[ -n "$vendor_id" && -n "$product_id" && $line =~ \(${vendor_id}:${product_id}\) ]]; then
                 bus_id_from_hwid="$current_bus"
                 break
             fi
         done < <(/usr/sbin/usbip list -r "${server_address}" 2>/dev/null)
+        
+        if [[ -n "$bus_id_from_hwid" ]]; then
+            bashio::log.info "Resolved hardware ID ${hardware_id} to bus ${bus_id_from_hwid}"
+            echo "/usr/sbin/usbip detach -r ${server_address} -b ${bus_id_from_hwid} >/dev/null 2>&1 || true" >>"${mount_script}"
+            echo "/usr/sbin/usbip attach --remote=${server_address} --busid=${bus_id_from_hwid}" >>"${mount_script}"
+        else
+            bashio::log.error "Could not find matching device for hardware ID ${hardware_id} on ${server_address}"
+        fi
         
         if [[ -n "$bus_id_from_hwid" ]]; then
             bashio::log.info "Resolved hardware ID ${hardware_id} to bus ${bus_id_from_hwid}"

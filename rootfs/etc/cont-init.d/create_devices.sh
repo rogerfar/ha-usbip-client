@@ -133,14 +133,6 @@ for device in $(bashio::config 'devices|keys'); do
         else
             bashio::log.error "Could not find matching device for hardware ID ${hardware_id} on ${server_address}"
         fi
-        
-        if [[ -n "$bus_id_from_hwid" ]]; then
-            bashio::log.info "Resolved hardware ID ${hardware_id} to bus ${bus_id_from_hwid}"
-            echo "/usr/sbin/usbip detach -r ${server_address} -b ${bus_id_from_hwid} >/dev/null 2>&1 || true" >>"${mount_script}"
-            echo "/usr/sbin/usbip attach --remote=${server_address} --busid=${bus_id_from_hwid}" >>"${mount_script}"
-        else
-            bashio::log.error "Could not find matching device for hardware ID ${hardware_id} on ${server_address}"
-        fi
     fi
 done
 

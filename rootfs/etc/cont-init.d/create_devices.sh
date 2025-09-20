@@ -61,6 +61,15 @@ else
     bashio::log.error "Failed to retrieve device list from server ${discovery_server_address}."
 fi
 
+bashio::log.info "Dumping usbip list output from ${server_address} for debugging..."
+if output=$(/usr/sbin/usbip list -r "${server_address}" 2>&1); then
+    while IFS= read -r line; do
+        bashio::log.info "[usbip] $line"
+    done <<< "$output"
+else
+    bashio::log.error "Failed to run usbip list -r ${server_address}: $output"
+fi
+
 # Loop through configured devices
 bashio::log.info "Iterating over configured devices."
 for device in $(bashio::config 'devices|keys'); do
